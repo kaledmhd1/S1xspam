@@ -24,10 +24,15 @@ def visit_profile(jwt_token, target_uid):
     try:
         response = requests.post(url, headers=headers, data=data, verify=False)
         print("Response code:", response.status_code)
+        print("Response headers:", response.headers)
         print("Response body:", response.text)
-        return response.status_code == 200
+        if response.status_code == 200:
+            return True
+        else:
+            print(f"Request failed with status {response.status_code}")
+            return False
     except Exception as e:
-        print("Error:", str(e))
+        print("Exception during request:", e)
         return False
 
 @app.route('/view', methods=['GET'])
