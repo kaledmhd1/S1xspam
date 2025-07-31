@@ -1,7 +1,5 @@
 from flask import Flask, request, jsonify
-import base64, json, requests
-from datetime import datetime
-from encrypt_api import encrypt_api
+import requests
 
 app = Flask(__name__)
 
