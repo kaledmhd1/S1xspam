@@ -1,59 +1,57 @@
 from flask import Flask, request, jsonify
 import requests
-import time
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
 
-def encrypt_api(PAYLOAD):
-    def xor_encrypt_decrypt(data, key=0x55):
-        return bytes([b ^ key for b in data])
+# دالة ترسل طلب فتح بروفايل اللاعب
+def visit_profile(jwt_token, target_uid):
+    url = "https://clientbp.common.ggbluefox.com/GetUserInfoData"
 
-    data_bytes = bytes.fromhex(PAYLOAD)
-    encrypted_bytes = xor_encrypt_decrypt(data_bytes)
-    return encrypted_bytes.hex()
-
-def decrypt_api(hex_string):
-    # فك التشفير هو نفس التشفير (XOR)
-    return encrypt_api(hex_string)
-
-def guest_token(uid, password):
-    url = "https://100067.connect.garena.com/oauth/guest/token/grant"
     headers = {
-        "Host": "100067.connect.garena.com",
-        "User-Agent": "GarenaMSDK/4.0.19P4(G011A ;Android 10;en;EN;)",
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "close",
+        'Authorization': f'Bearer {jwt_token}',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Dalvik/2.1.0 (Linux; Android 9)',
+        'X-Unity-Version': '2018.4.11f1',
+        'ReleaseVersion': 'OB50',
     }
+
+    # إرسال uid الهدف في الحقل المطلوب
     data = {
-        "uid": str(uid),
-        "password": password,
-        "response_type": "token",
-        "client_type": "2",
-        "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
-        "client_id": "100067",
+        "target_uid": target_uid
     }
-    resp = requests.post(url, headers=headers, data=data)
-    resp_json = resp.json()
-    encrypted_token = resp_json.get("access_token")
-    return encrypted_token
 
-@app.route("/get_jwt", methods=["POST"])
-def get_jwt():
-    data = request.get_json()
-    if not data or "uid" not in data or "password" not in data:
-        return jsonify({"error": "Missing uid or password"}), 400
-    
-    uid = data["uid"]
-    password = data["password"]
-    
-    encrypted_token = guest_token(uid, password)
-    if not encrypted_token:
-        return jsonify({"error": "Failed to get encrypted token"}), 500
+    try:
+        response = requests.post(url, headers=headers, data=data, verify=False)
+        return response.status_code == 200
+    except:
+        return False
 
-    jwt_token = decrypt_api(encrypted_token)
+@app.route('/view', methods=['POST'])
+def view():
+    try:
+        data = request.get_json()
+        jwt_token = data.get("jwt_token")
+        target_uid = data.get("target_uid")
 
-    return jsonify({"BearerAuth": jwt_token, "success": True})
+        if not jwt_token or not target_uid:
+            return jsonify({"error": "Missing jwt_token or target_uid"}), 400
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+        success = visit_profile(jwt_token, target_uid)
+
+        if success:
+            return jsonify({"status": "success", "message": "Profile viewed."})
+        else:
+            return jsonify({"status": "failed", "message": "Failed to view profile."}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/')
+def home():
+    return "FF View API running. Use POST /view"
+
+if __name__ == '__main__':
+    app.run()
