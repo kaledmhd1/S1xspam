@@ -18,7 +18,6 @@ def visit_profile(jwt_token, target_uid):
         'ReleaseVersion': 'OB50',
     }
 
-    # إرسال uid الهدف في الحقل المطلوب
     data = {
         "target_uid": target_uid
     }
@@ -29,29 +28,25 @@ def visit_profile(jwt_token, target_uid):
     except:
         return False
 
-@app.route('/view', methods=['POST'])
+# واجهة API تقبل رابط مباشر GET
+@app.route('/view', methods=['GET'])
 def view():
-    try:
-        data = request.get_json()
-        jwt_token = data.get("jwt_token")
-        target_uid = data.get("target_uid")
+    jwt_token = request.args.get("jwt_token")
+    target_uid = request.args.get("target_uid")
 
-        if not jwt_token or not target_uid:
-            return jsonify({"error": "Missing jwt_token or target_uid"}), 400
+    if not jwt_token or not target_uid:
+        return jsonify({"error": "Missing jwt_token or target_uid"}), 400
 
-        success = visit_profile(jwt_token, target_uid)
+    success = visit_profile(jwt_token, target_uid)
 
-        if success:
-            return jsonify({"status": "success", "message": "Profile viewed."})
-        else:
-            return jsonify({"status": "failed", "message": "Failed to view profile."}), 500
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    if success:
+        return jsonify({"status": "success", "message": "Profile viewed."})
+    else:
+        return jsonify({"status": "failed", "message": "Failed to view profile."}), 500
 
 @app.route('/')
 def home():
-    return "FF View API running. Use POST /view"
+    return "✅ FF View API is running. Use /view?jwt_token=...&target_uid=..."
 
 if __name__ == '__main__':
     app.run()
