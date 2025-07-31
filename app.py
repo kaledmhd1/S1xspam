@@ -26,11 +26,12 @@ def get_jwt():
         resp = requests.post(guest_url, headers=headers, data=data)
         resp.raise_for_status()
         td = resp.json()
-        jwt_token = td.get("token")
-        if not jwt_token:
-            return jsonify({"error": "JWT not found in response"}), 500
 
-        return jsonify({"jwt_token": jwt_token})
+        # اطبع الرد الكامل في اللوج (سيرفر)
+        print("Response from Garena:", td)
+
+        # أعد الرد كاملًا للمستدعي عشان تشوفه
+        return jsonify(td)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
