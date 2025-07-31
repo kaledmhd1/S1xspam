@@ -49,4 +49,5 @@ def view():
 def home():
     return "✅ FF View API is running. Use /view?jwt_token=...&target_uid=..."
 
-if __nam
+if __name__ == '__main__':
+    app.run()
