@@ -1,58 +1,42 @@
 from flask import Flask, request, jsonify
 import requests
 import urllib3
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
 
 def visit_profile(jwt_token, target_uid):
-    url = "https://clientbp.common.ggbluefox.com/GetUserInfoData"
-
+    url = f"https://info-ch9ayfa.vercel.app/{target_uid}"
     headers = {
         'Authorization': f'Bearer {jwt_token}',
-        'Content-Type': 'application/x-www-form-urlencoded',
         'User-Agent': 'Dalvik/2.1.0 (Linux; Android 9)',
-        'X-Unity-Version': '2018.4.11f1',
-        'ReleaseVersion': 'OB50',
     }
-
-    data = {
-        "target_uid": target_uid
-    }
-
     try:
-        response = requests.post(url, headers=headers, data=data, verify=False)
-        print("Response code:", response.status_code)
-        print("Response headers:", response.headers)
-        print("Response body:", response.text)
+        response = requests.get(url, headers=headers, verify=False)
         if response.status_code == 200:
-            return True
+            return True, response.json()
         else:
-            print(f"Request failed with status {response.status_code}")
-            return False
+            return False, response.text
     except Exception as e:
-        print("Exception during request:", e)
-        return False
+        return False, str(e)
 
 @app.route('/view', methods=['GET'])
-def view():
-    jwt_token = request.args.get("jwt_token")
-    target_uid = request.args.get("target_uid")
+def api_view():
+    jwt_token = request.args.get('jwt_token')
+    uid = request.args.get('uid')
 
-    if not jwt_token or not target_uid:
-        return jsonify({"error": "Missing jwt_token or target_uid"}), 400
+    if not jwt_token or not uid:
+        return jsonify({"status": "failed", "message": "Missing jwt_token or uid parameter"}), 400
 
-    success = visit_profile(jwt_token, target_uid)
-
+    success, result = visit_profile(jwt_token, uid)
     if success:
-        return jsonify({"status": "success", "message": "Profile viewed."})
+        return jsonify({"status": "success", "data": result})
     else:
-        return jsonify({"status": "failed", "message": "Failed to view profile."}), 500
+        return jsonify({"status": "failed", "message": result}), 500
 
 @app.route('/')
 def home():
-    return "✅ FF View API is running. Use /view?jwt_token=...&target_uid=..."
+    return "Profile Viewer API. Use /view?jwt_token=YOUR_JWT&uid=TARGET_UID"
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=10000)
