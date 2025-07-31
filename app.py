@@ -1,40 +1,32 @@
-from flask import Flask, request, jsonify
-import requests
+def encrypt_api(PAYLOAD):
+    # هذه نسخة الدالة كما أرسلتها في البداية، بدون تعديل
+    import base64
 
-app = Flask(__name__)
+    def dec_to_hex(ask):
+        ask_result = hex(ask)
+        final_result = str(ask_result)[2:]
+        if len(final_result) == 1:
+            final_result = "0" + final_result
+            return final_result
+        else:
+            return final_result
 
-@app.route('/get_jwt', methods=['GET'])
-def get_jwt():
-    uid = request.args.get('uid')
-    password = request.args.get('password')
-    if not uid or not password:
-        return jsonify({"error": "Missing uid or password"}), 400
+    def convert_to_hex(PAYLOAD):
+        hex_payload = ''.join([f'{byte:02x}' for byte in PAYLOAD])
+        return hex_payload
 
-    try:
-        guest_url = "https://100067.connect.garena.com/oauth/guest/token/grant"
-        headers = {
-            "Host": "100067.connect.garena.com",
-            "User-Agent": "GarenaMSDK/4.0.19P4(G011A ;Android 10;en;EN;)",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-        data = {
-            "uid": uid, "password": password,
-            "response_type": "token", "client_type": "2",
-            "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
-            "client_id": "100067"
-        }
-        resp = requests.post(guest_url, headers=headers, data=data)
-        resp.raise_for_status()
-        td = resp.json()
+    def convert_to_bytes(PAYLOAD):
+        payload = bytes.fromhex(PAYLOAD)
+        return payload
 
-        # اطبع الرد الكامل في اللوج (سيرفر)
-        print("Response from Garena:", td)
+    def xor_encrypt_decrypt(data, key=0x55):
+        return bytes([b ^ key for b in data])
 
-        # أعد الرد كاملًا للمستدعي عشان تشوفه
-        return jsonify(td)
+    # تحويل سترينج hex إلى bytes
+    data_bytes = bytes.fromhex(PAYLOAD)
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # تشفير/فك تشفير عبر XOR بالرقم 0x55 (حسب كودك في بداية المحادثة)
+    encrypted_bytes = xor_encrypt_decrypt(data_bytes)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    # إرجاع النتيجة كسلسلة hex
+    return encrypted_bytes.hex()
