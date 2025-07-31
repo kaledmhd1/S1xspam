@@ -6,7 +6,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
 
-# دالة ترسل طلب فتح بروفايل اللاعب
 def visit_profile(jwt_token, target_uid):
     url = "https://clientbp.common.ggbluefox.com/GetUserInfoData"
 
@@ -24,11 +23,13 @@ def visit_profile(jwt_token, target_uid):
 
     try:
         response = requests.post(url, headers=headers, data=data, verify=False)
+        print("Response code:", response.status_code)
+        print("Response body:", response.text)
         return response.status_code == 200
-    except:
+    except Exception as e:
+        print("Error:", str(e))
         return False
 
-# واجهة API تقبل رابط مباشر GET
 @app.route('/view', methods=['GET'])
 def view():
     jwt_token = request.args.get("jwt_token")
@@ -48,5 +49,4 @@ def view():
 def home():
     return "✅ FF View API is running. Use /view?jwt_token=...&target_uid=..."
 
-if __name__ == '__main__':
-    app.run()
+if __nam
